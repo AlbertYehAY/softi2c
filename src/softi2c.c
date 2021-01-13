@@ -25,6 +25,7 @@ static inline void scl_irq(void);
 /*--------------------------------------------------------------*/
 struct device *i2c_port[2]={NULL,NULL};
 static struct gpio_callback i2c_cb_data[2];
+static int i2c_cb_enab[2]={0,0};
 
 void i2c_irq(struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
@@ -51,16 +52,6 @@ static void softi2c_pin_init(gpio_pin_t pin, uint32_t dir)
     if(dir==GPIO_INPUT)
     {
         gpio_pin_configure(i2c_port[pin],pin,dir | GPIO_PULL_UP);
-	ret = gpio_pin_interrupt_configure(i2c_port[pin],
-					   pin,
-					   GPIO_INT_EDGE_BOTH);	
-        if (ret != 0) 
-        {
-            printk("Error %d: failed to configure GPIO_1 pin %d\n",pin);
-            return;
-        }
-        gpio_init_callback(&i2c_cb_data[pin], i2c_irq, BIT(pin));
-        gpio_add_callback(i2c_port[pin], &i2c_cb_data[pin]);
     }
     else
     {
@@ -82,8 +73,12 @@ static void softi2c_pin_init_irq(gpio_pin_t pin,uint32_t flag)
         printk("Error %d: failed to configure GPIO_1 pin %d\n",pin);
         return;
     }
-    gpio_init_callback(&i2c_cb_data[pin], i2c_irq, BIT(pin));
+    if(i2c_cb_enab[pin]!=0)
+        gpio_remove_callback(i2c_port[pin], &i2c_cb_data[pin]);
+
+    gpio_init_callback(&i2c_cb_data[pin], i2c_irq, BIT(pin));    
     gpio_add_callback(i2c_port[pin], &i2c_cb_data[pin]);
+    i2c_cb_enab[pin]=1;
 }
 
 void softi2c_init()
