@@ -47,10 +47,10 @@ static void softi2c_pin_init(gpio_pin_t pin, uint32_t dir)
 
     i2c_port[pin] = device_get_binding(GPIO_IF);
     if(!i2c_port[pin])
-        return;
-    gpio_pin_configure(i2c_port[pin],pin,dir);
+        return;    
     if(dir==GPIO_INPUT)
     {
+        gpio_pin_configure(i2c_port[pin],pin,dir | GPIO_PULL_UP);
 	ret = gpio_pin_interrupt_configure(i2c_port[pin],
 					   pin,
 					   GPIO_INT_EDGE_BOTH);	
@@ -61,6 +61,10 @@ static void softi2c_pin_init(gpio_pin_t pin, uint32_t dir)
         }
         gpio_init_callback(&i2c_cb_data[pin], i2c_irq, BIT(pin));
         gpio_add_callback(i2c_port[pin], &i2c_cb_data[pin]);
+    }
+    else
+    {
+        gpio_pin_configure(i2c_port[pin],pin,dir);
     }
 }
 
@@ -447,6 +451,7 @@ static inline void scl_irq(void)
               break;
       case SCL_R9LH:
               //if(P2IN & SDA)        // NACK_READ
+              //if(gpio_pin_get(i2c_port[SDA_PIN],SDA_PIN))
               if(gpio_pin_get(i2c_port[SDA_PIN],SDA_PIN))
               {
                       //P1IES &= ~SCL;    // Set rising edge of SCL
