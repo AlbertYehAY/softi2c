@@ -90,10 +90,11 @@ void softi2c_init()
 {
     printf("%s\n",__func__);
 
-    softi2c_pin_init(SCL_PIN,GPIO_INPUT);
-    softi2c_pin_init_irq(SCL_PIN,GPIO_INT_EDGE_BOTH);
-
-    softi2c_pin_init(SDA_PIN,GPIO_OUTPUT);
+    InitBuffer();
+    INIT_PORT();
+    //softi2c_pin_init(SCL_PIN,GPIO_INPUT);
+    //softi2c_pin_init_irq(SCL_PIN,GPIO_INT_EDGE_BOTH);
+    //softi2c_pin_init(SDA_PIN,GPIO_OUTPUT);
 }
 
 void softi2c_test(int value)
@@ -102,7 +103,8 @@ void softi2c_test(int value)
     //    gpio_pin_write(i2c_portSCL,0, value);
     if(i2c_port[SDA_PIN])
     {
-        gpio_pin_set(i2c_port[SDA_PIN],SDA_PIN, value);    }
+        gpio_pin_set(i2c_port[SDA_PIN],SDA_PIN, value);    
+    }
 }
 
 
