@@ -180,7 +180,6 @@ void INIT_PORT()
 					   SCL_PIN,
 					   GPIO_INT_DISABLE);	
 
-
         //P2IE  |= SDA;     // Enable SDA interrupt
         gpio_pin_interrupt_configure(i2c_port[SDA_PIN],
                                      SDA_PIN,
