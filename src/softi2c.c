@@ -86,6 +86,8 @@ void softi2c_init()
     printf("%s\n",__func__);
 
     InitBuffer();
+    i2c_port[SCL_PIN] = device_get_binding(GPIO_IF);
+    i2c_port[SDA_PIN] = device_get_binding(GPIO_IF);
     INIT_PORT();
     //softi2c_pin_init(SCL_PIN,GPIO_INPUT);
     //softi2c_pin_init_irq(SCL_PIN,GPIO_INT_EDGE_BOTH);
@@ -179,7 +181,6 @@ void INIT_PORT()
         gpio_pin_interrupt_configure(i2c_port[SDA_PIN],
                                      SDA_PIN,
                                      GPIO_INT_ENABLE);	
-
         //P1IFG &= ~SCL;    // Reset interrupt flag
 	
         //P2IFG &= ~SDA;

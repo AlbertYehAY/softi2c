@@ -98,7 +98,7 @@ void main(void)
                 //softi2c_test(0);
 		//k_msleep(SLEEP_TIME_MS);
                 //softi2c_test(1);
-                k_msleep(SLEEP_TIME_MS);
+                k_msleep(SLEEP_TIME_MS);                
 	}
 }
 
