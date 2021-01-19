@@ -9,6 +9,7 @@
 #define GPIO_IF   "GPIO_1"
 #define SCL_PIN 0
 #define SDA_PIN 1
+#define TEST_PIN 2
 
 #define BIT7 (1<<7)
 #define BIT6 (1<<6)
@@ -23,39 +24,45 @@ static inline void sda_irq(void);
 static inline void scl_irq(void);
 
 /*--------------------------------------------------------------*/
-struct device *i2c_port[2]={NULL,NULL};
-static struct gpio_callback i2c_cb_data[2];
-static int i2c_cb_enab[2]={0,0};
+struct device *i2c_port[32]={0};
+static struct gpio_callback i2c_cb_data[32];
+static int i2c_cb_enab[32]={0,0,0};
 
-void i2c_irq(struct device *dev, struct gpio_callback *cb,
+void i2c_irq1(struct device *dev, struct gpio_callback *cb,
 		    uint32_t pins)
 {
-    if(pins == SCL_PIN)
-    {
-        printk("scl_irq at %" PRIu32 "\n", k_cycle_get_32());
-        scl_irq();
-    }
-    else if(pins == SDA_PIN)
-    {
-        printk("sda_irq at %" PRIu32 "\n", k_cycle_get_32());
-        sda_irq();
-    }
+     printk("scl_irq at %" PRIu32 "\n", k_cycle_get_32());
+     scl_irq();
+}
+
+void i2c_irq2(struct device *dev, struct gpio_callback *cb,
+		    uint32_t pins)
+{
+    printk("sda_irq at %" PRIu32 "\n", k_cycle_get_32());
+    sda_irq();
 }
 
 static void softi2c_pin_init(gpio_pin_t pin, uint32_t dir)
 {
     int ret=0;
 
-    i2c_port[pin] = device_get_binding(GPIO_IF);
+    //i2c_port[pin] = device_get_binding(GPIO_IF);
     if(!i2c_port[pin])
+    {
+        printk("%s:NULL\n",__func__);
         return;    
+    }
     if(dir==GPIO_INPUT)
     {
         gpio_pin_configure(i2c_port[pin],pin,dir | GPIO_PULL_UP);
     }
-    else
+    else if(dir==GPIO_OUTPUT)
     {
         gpio_pin_configure(i2c_port[pin],pin,dir);
+    }
+    else
+    {
+        printk("%s:unknow, dir=%d\n",__func__,dir);
     }
 }
 
@@ -75,8 +82,15 @@ static void softi2c_pin_init_irq(gpio_pin_t pin,uint32_t flag)
     }
     if(i2c_cb_enab[pin]!=0)
         gpio_remove_callback(i2c_port[pin], &i2c_cb_data[pin]);
+    if(pin==SCL_PIN)
+    {
+        gpio_init_callback(&i2c_cb_data[pin], i2c_irq1, BIT(pin));    
+    }
+    else if(pin==SDA_PIN)
+    {
+        gpio_init_callback(&i2c_cb_data[pin], i2c_irq2, BIT(pin));    
+    }
 
-    gpio_init_callback(&i2c_cb_data[pin], i2c_irq, BIT(pin));    
     gpio_add_callback(i2c_port[pin], &i2c_cb_data[pin]);
     i2c_cb_enab[pin]=1;
 }
@@ -84,7 +98,10 @@ static void softi2c_pin_init_irq(gpio_pin_t pin,uint32_t flag)
 void softi2c_init()
 {
     printf("%s\n",__func__);
-
+  
+    i2c_port[SCL_PIN] = device_get_binding(GPIO_IF);
+    i2c_port[SDA_PIN] = device_get_binding(GPIO_IF);
+    i2c_port[TEST_PIN] = device_get_binding(GPIO_IF);
     InitBuffer();
     INIT_PORT();
     //softi2c_pin_init(SCL_PIN,GPIO_INPUT);
@@ -94,19 +111,36 @@ void softi2c_init()
 
 void softi2c_test(int value)
 {
+    static int scl_value=-1;
+    static int sda_value=-1;
     //if(i2c_portSCL)
     //    gpio_pin_write(i2c_portSCL,0, value);
-    if(i2c_port[SDA_PIN])
+    if(i2c_port[TEST_PIN])
     {
-        gpio_pin_set(i2c_port[SDA_PIN],SDA_PIN, value);    
+        gpio_pin_set(i2c_port[TEST_PIN],TEST_PIN, value);    
     }
+
+
+#if(0)
+    if(scl_value != gpio_pin_get(i2c_port[SCL_PIN],SCL_PIN))
+    {
+        scl_value=gpio_pin_get(i2c_port[SCL_PIN],SCL_PIN);
+        printk("SCL_PIN = %d\n",scl_value);
+    }
+    
+    if(sda_value != gpio_pin_get(i2c_port[SDA_PIN],SDA_PIN))
+    {
+        sda_value=gpio_pin_get(i2c_port[SDA_PIN],SDA_PIN);
+        printk("SDA_PIN = %d\n",sda_value);
+    }
+#endif    
 }
 
 
 /************************************************************/
 
 #define SCL BIT0
-#define SDA BIT0
+#define SDA BIT1
 #define I2COA 0x0A               // Slave address
 
 #define I2C_START     1          // Start condition
@@ -152,6 +186,12 @@ void InitBuffer()
 // initially, just SDA interrupt is set
 void INIT_PORT()
 {
+#if(0)
+        softi2c_pin_init(SCL_PIN,GPIO_INPUT);   
+        softi2c_pin_init(SDA_PIN,GPIO_INPUT);   
+        softi2c_pin_init_irq(SDA_PIN,GPIO_INT_EDGE_FALLING);
+        softi2c_pin_init_irq(SCL_PIN,GPIO_INT_EDGE_FALLING);
+#else
 	//P2OUT &= ~SDA;    // When the pins are set to
         gpio_pin_set(i2c_port[SDA_PIN],SDA_PIN, 0); 
 
@@ -186,7 +226,8 @@ void INIT_PORT()
 
 	//PM5CTL0 &= ~LOCKLPM5;  // Disable the GPIO power-on default high-impedance mode
 	                       // to activate previously configured port settings
-
+#endif
+        softi2c_pin_init(TEST_PIN,GPIO_OUTPUT);   
 }
 
 /*
