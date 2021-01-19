@@ -95,9 +95,9 @@ void main(void)
 	printk("Press the button\n");
 	while (1) {
 		match_led_to_button(button, led);
-                softi2c_test(0);
-		k_msleep(SLEEP_TIME_MS);
-                softi2c_test(1);
+                //softi2c_test(0);
+		//k_msleep(SLEEP_TIME_MS);
+                //softi2c_test(1);
                 k_msleep(SLEEP_TIME_MS);
 	}
 }
